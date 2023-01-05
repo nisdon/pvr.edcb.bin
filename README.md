@@ -82,4 +82,4 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 ### 録画
 | 項目 | 機能 |
 ----|----
-| 録画の保存先 | 録画を保存しているディレクトリを指定します。<br>例 smb://user:pass@samba_addr/ or d:\recorded\ |
+| 録画の保存先 | 録画ディレクトリに割当てたパスを指定します。<br>EDCBと同じPCで使用する場合はブランクにします。<br>例 smb://user:pass@samba_addr/ |
