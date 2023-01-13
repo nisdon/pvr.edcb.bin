@@ -16,10 +16,9 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
  - 局ロゴ表示はタイプ5のみ対応。
 
 ### TV視聴
-- UDPのみ対応。
 - 視聴用にひとつのEpgDataCap_Bonを占有します。
 - 視聴を終えてもストリームは停止しません。
-- PowerSaving開始時にストリームを停止。
+- PowerSaving開始時にストリームを停止（timeshift使用時は無効）。
 
 ### 番組予約
  - 予約機能はEPG予約の追加、削除のみ。
@@ -38,11 +37,15 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 ----|----
 | NWサービスにTCPを使う | OFFの場合、PIPEを使用。 |
 | NWサービスのTCPアドレス | EpgTimerの使用するaddressとport。<br>例 192.168.1.101:4510 |
+| timeshiftを使う | timeshiftの使用を切替えます。 |
 
 ### 再生
 | 項目 | 機能 |
 ----|----
-| TV視聴用アドレス | UDPを受信するアダプタのaddressとport。<br>例 udp://receive_adapter:1234 |
+| TV視聴の種類 | UDP、TCP又はHTTPを選択。 |
+| UDP アドレス | UDPを受信するアダプタのaddressとport。<br>例 udp://receive_adapter:1234 |
+| TCP アドレス | TCPを送信するアダプタのaddressとport。<br>例 tcp://receive_adapter:22000 |
+| HTTP アドレス | HTTPを送信するサーバーのaddressとport。<br>例 http://server:5510/api/TVCast?onid=%d&tsid=%d&sid=%d |
 
 ### 番組表
 | 項目 | 機能 |
