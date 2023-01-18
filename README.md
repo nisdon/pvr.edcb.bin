@@ -9,27 +9,11 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
  - Windows
  - Raspberry Pi（Bullseye 32bit）
 
-## 特徴
-### 番組表
- - 使用チャンネルの選択、並び換えができます（「channels.xml」を使用）。
- - 使用チャンネルグループの選択ができます（「groups.xml」を使用）。
- - 局ロゴ表示はタイプ5のみ対応。
-
-### TV視聴
-- 視聴用にひとつのEpgDataCap_Bonを占有します。
-- 視聴を終えてもストリームは停止しません。
-- PowerSaving開始時にストリームを停止（timeshift使用時は無効）。
-
-### 番組予約
- - 予約機能はEPG予約の追加、削除のみ。
- - EPG予約追加時のオプションはデフォルト。
- - 自動予約、プログラム予約は表示のみ。
-
-### 録画
- - 録画の保存はローカルドライブ、又はSamba接続先を想定。
- - sambaでアクセスする場合、サブディレクトリは使用でません。
- - 録画の削除時は録画ファイルも削除します。
- - 録画のサムネイル表示は出来ません。
+## その他
+ - 予約機能はEPG予約の追加、削除のみ対応。
+ - EPG予約追加時のオプションはデフォルト設定を使用。
+ - 自動予約、プログラム予約は表示のみ対応。
+ - 局ロゴの表示はタイプ5を使用。
 
 ## 設定項目
 ### 基本
@@ -39,6 +23,9 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 | NWサービスのTCPアドレス | EpgTimerの使用するaddressとport。<br>例 192.168.1.101:4510 |
 | timeshiftを使う | timeshiftの使用を切替えます。 |
 
+#### NWサービスのPIPE使用
+ローカルPCに限りアクセス可能。
+
 ### 再生
 | 項目 | 機能 |
 ----|----
@@ -47,15 +34,78 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 | TCP アドレス | TCPを送信するアダプタのaddressとport。<br>例 tcp://receive_adapter:22000 |
 | HTTP アドレス | HTTPを送信するサーバーのaddressとport。<br>例 http://server:5510/api/TVCast?onid=%d&tsid=%d&sid=%d |
 
+#### UDP、TCPの使用
+NetworkTVモードにより視聴します。  
+開始されたNetworkTVモードはPowerSaving発動時に停止します。  
+timeshift使用時はNetworkTVモードは停止しません。  
+
+#### HTTPの使用
+HTTPでアクセスするには別途TVキャスト用のREST APIが必要です。  
+以下はEDCB_Material_WebUIのTVCastを参考にしたサンプルです。  
+
+```lua
+function readts(pname)
+  f=edcb.io.open(pname, 'rb')
+
+  if not f then
+    mg.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n')
+  else
+    mg.write('HTTP/1.1 200 OK\r\nContent-Type: '..mg.get_mime_type('viewts')..'\r\nContent-Disposition: filename=viewts\r\nConnection: close\r\n\r\n')
+    while true do
+      buf=f:read(48128)
+      if buf and #buf ~= 0 then
+        if not mg.write(buf) then
+          -- キャンセルされた
+          mg.cry('canceled')
+          break
+        end
+      else
+        -- 終端に達した
+        mg.cry('end')
+        break
+      end
+    end
+    f:close()
+  end
+end
+
+ok,pid=edcb.IsOpenNetworkTV(n)
+if ok then
+  -- 開いているNetworkTVモードを使用
+  pname='\\\\.\\pipe\\SendTSTCP_'..n..'_'..pid, 'rb'
+  readtsa(pname)
+  edcb.CloseNetworkTV(n)
+else
+  -- 新しくNetworkTVモードを開く
+  if onid and tsid and sid then
+    ok,pid=edcb.OpenNetworkTV(mode, onid, tsid, sid, n)
+    retry=0
+    while true do
+      -- 最大5秒間パイプの準備待ち
+      retry=retry+1
+      ff=edcb.FindFile('\\\\.\\pipe\\SendTSTCP_'..n..'_'..pid, 1)
+      if ff or retry > 25 then break end
+      edcb.Sleep(200)
+    end
+  end
+  if ff and ok then
+    pname='\\\\.\\pipe\\'..ff[1].name, 'rb'
+    readts(pname)
+  end
+end
+```
+
 ### 番組表
 | 項目 | 機能 |
 ----|----
-| チャンネル指定 | 指定したチャンネルを使用する。 |
-| チャンネルファイル | 指定チャンネルの定義ファイル。 |
-| グループ指定 | 指定したグループを使用する。 |
-| グループファイル | 指定グループの定義ファイル。 |
+| チャンネル指定 | 使用チャンネルを指定する。 |
+| チャンネルファイル | 使用チャンネルを定義したxml。 |
+| グループ指定 | 使用グループを指定する。 |
+| グループファイル | 使用グループを定義したxml。 |
 
-#### チャンネルファイル
+#### 例 channels.xml
+使用するチャンネルの選択、並び換えができます。  
+
 ```xml
 <channels>
   <sid>40960</sid>
@@ -64,7 +114,9 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
   <sid>103</sid>
 </channels>
 ```
-#### グループファイル
+#### 例 groups.xml
+使用チャンネルグループの選択ができます。  
+
 ```xml
 <groups>
   <group>
@@ -87,5 +139,19 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 ### 録画
 | 項目 | 機能 |
 ----|----
-| 録画パスの指定 | OFFの場合、ローカルパスを使用。 |
-| 録画パス | 録画ファイルが保存されている場所。<br>例 smb://user:pass@samba_addr/ |
+| 録画パスの種類 | ローカルフォルダ、共有フォルダ、又はユーザー定義パスを使用。 |
+| ユーザー定義パス | 録画ファイルが保存されている場所。<br>例 smb://user:pass@samba_addr/ |
+
+#### 「Shared folder」の使用
+EpgTimerSrv.iniにCompatFlagsを定義する必要があります。  
+CompatFlags=16（4bit目をON）  
+
+#### 「User defined」の使用
+別途用意した場所を使用する場合に定義します。  
+この場合、サブディレクトリは使用でません。  
+
+## コンテキストメニュー項目
+### 録画
+| 項目 | 機能 |
+----|----
+| ドロップログの表示 | 録画ステータスとドロップ数を表示。 |
