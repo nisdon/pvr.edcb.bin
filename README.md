@@ -7,7 +7,7 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 
 ## 対応OS
  - Windows
- - Raspberry Pi（Bullseye 32bit）
+ - Raspberry Pi
 
 ## その他
  - 予約機能はEPG予約の追加、削除のみ対応。
@@ -141,6 +141,7 @@ end
 ----|----
 | 録画パスの種類 | ローカルフォルダ、共有フォルダ、又はユーザー定義パスを使用。 |
 | ユーザー定義パス | 録画ファイルが保存されている場所。<br>例 smb://user:pass@samba_addr/ |
+| 共有フォルダのユーザー | 使用するユーザーとパスワード。 |
 
 #### 「Shared folder」の使用
 EpgTimerSrv.iniにCompatFlagsを定義する必要があります。  
