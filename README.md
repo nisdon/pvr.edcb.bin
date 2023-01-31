@@ -8,6 +8,7 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドン�
 ## 対応OS
  - Windows
  - Raspberry Pi
+ - Android
 
 ## その他
  - 予約機能はEPG予約の追加、削除のみ対応。
