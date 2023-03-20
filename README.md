@@ -1,5 +1,5 @@
 # EDCB PVR Client
-EpgTimerのコマンド制御確認用として作成したkodi用pvrアドンです。  
+EpgTimerのコマンド制御確認用として作成したkodi用pvrアドオンです。  
 可能な確認動作としてEPG表示、EPG予約、TV視聴、そして録画の再生ができます。  
 
 ## 使用するTV録画ソフト
