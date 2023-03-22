@@ -45,6 +45,12 @@ HTTPでアクセスするには別途TVキャスト用のREST APIが必要です
 以下はEDCB_Material_WebUIのTVCastを参考にしたサンプルです。  
 
 ```lua
+onid=tonumber(mg.get_var(mg.request_info.query_string, 'onid'))
+tsid=tonumber(mg.get_var(mg.request_info.query_string, 'tsid'))
+sid=tonumber(mg.get_var(mg.request_info.query_string, 'sid'))
+mode=2
+n=0
+
 function readts(pname)
   f=edcb.io.open(pname, 'rb')
 
