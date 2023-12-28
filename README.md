@@ -1,6 +1,8 @@
 # EDCB PVR Client
-EpgTimerのコマンド制御確認用として作成したkodi用pvrアドオンです。  
-可能な確認動作としてEPG表示、EPG予約、TV視聴、そして録画の再生ができます。  
+KODIのPVRアドオンです。
+
+## 概要
+EDCBをバッグエンドとして、KODI上でTV視聴、録画予約、そして録画再生をサポートします。
 
 ## 使用するTV録画ソフト
  - EDCB（動作確認ver work+s-221114）
@@ -10,47 +12,42 @@ EpgTimerのコマンド制御確認用として作成したkodi用pvrアドオ�
  - Raspberry Pi
  - Android
 
-## その他
- - 予約機能はEPG予約の追加、削除のみ対応。
- - EPG予約追加時のオプションはデフォルト設定を使用。
- - 自動予約、プログラム予約は表示のみ対応。
- - 局ロゴの表示はタイプ5を使用。
-
 ## 設定項目
 ### 基本
 | 項目 | 機能 |
 ----|----
-| NWサービスにTCPを使う | OFFの場合、PIPEを使用。 |
-| NWサービスのTCPアドレス | EpgTimerの使用するaddressとport。<br>例 192.168.1.101:4510 |
-| timeshiftを使う | timeshiftの使用を切替えます。 |
+| NWサービスにTCPを使う | PIPEを使用する場合はOffにします。 |
+| NWサービスのTCPアドレス | EpgTimerのaddressとport。<br>例 192.168.1.101:4510 |
+| timeshiftを使う | TV視聴時にタイムシフト機能を有効にします。 |
 
-#### NWサービスのPIPE使用
-ローカルPCに限りアクセス可能。
+#### NWサービスの使用
+EpgTimer側で通信を許可する必要があります。
+
+#### PIPEを用いたNWサービス
+Windows PC内でのプロセス間通信のみです。
+
+#### タイムシフト機能を使用するには
+inputstream.ffmpegdirectアドオンが必要です。
 
 ### 再生
 | 項目 | 機能 |
 ----|----
 | TV視聴の種類 | UDP、TCP又はHTTPを選択。 |
-| UDP アドレス | UDPを受信するアダプタのaddressとport。<br>例 udp://receive_adapter:1234 |
-| TCP アドレス | TCPを送信するアダプタのaddressとport。<br>例 tcp://receive_adapter:22000 |
+| UDP アドレス | UDPを受信するアダプタのaddressとport。 |
+| TCP アドレス | TCPを受信するアダプタのaddressとport。 |
 | HTTP アドレス | HTTPを送信するサーバーのaddressとport。<br>例 http://server:5510/api/TVCast?onid=%d&tsid=%d&sid=%d |
 
-#### UDP、TCPの使用
-NetworkTVモードにより視聴します。  
-開始されたNetworkTVモードはPowerSaving発動時に停止します。  
-timeshift使用時はNetworkTVモードは停止しません。  
+#### UDP、TCPを使用するには
+EpgDataCap_Bon側で送信先の設定が必要です。  
 
-#### HTTPの使用
-HTTPでアクセスするには別途TVキャスト用のREST APIが必要です。  
+#### UDP、TCPのアドレス
+受信アダプタを固定する場合に指定します。
+
+#### HTTPを使用するには
+TVキャスト用のREST APIが必要です。  
 以下はEDCB_Material_WebUIのTVCastを参考にしたサンプルです。  
 
 ```lua
-onid=tonumber(mg.get_var(mg.request_info.query_string, 'onid'))
-tsid=tonumber(mg.get_var(mg.request_info.query_string, 'tsid'))
-sid=tonumber(mg.get_var(mg.request_info.query_string, 'sid'))
-mode=2
-n=0
-
 function readts(pname)
   f=edcb.io.open(pname, 'rb')
 
@@ -146,16 +143,22 @@ end
 ### 録画
 | 項目 | 機能 |
 ----|----
-| 録画パスの種類 | ローカルフォルダ、又は共有フォルダを選択。 |
-| 共有フォルダのユーザー | 使用するユーザーとパスワード。 |
+| 録画先の種類 | ローカルフォルダ、又は共有フォルダを選択。 |
+| 共有フォルダのユーザー | ログインするユーザーとパスワード。 |
 
-#### 「Shared folder」の使用
-EpgTimerSrv.iniにCompatFlagsを定義する必要があります。  
-CompatFlags=16（4bit目をON）  
+#### 録画先の種類として
+ローカルネットワーク内で使用する場合は共有フォルダを選択します。
+
+#### 共有フォルダのパスを取得するために
+EpgTimerSrv.iniにCompatFlagsを設定します。  
+CompatFlags=16（4bit目をOn）
 
 ## コンテキストメニュー項目
 ### 録画
 | 項目 | 機能 |
 ----|----
 | ドロップログの表示 | 録画ステータスとドロップ数を表示。 |
+
+## ルールは
+自動予約の表示のみ対応。
 
