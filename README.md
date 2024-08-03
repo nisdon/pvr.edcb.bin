@@ -1,11 +1,11 @@
 # EDCB PVR Client
-KODIのPVRアドオンです。
+KODIのPVRアドオンです。  
 
 ## 概要
 EDCBをバッグエンドとして、KODI上でTV視聴、録画予約、そして録画再生をサポートします。
 
-## 使用するTV録画ソフト
- - EDCB（動作確認ver work+s-221114）
+## 対応するTV録画ソフト
+ - EDCB（動作確認ver work+s-240622）
 
 ## 対応OS
  - Windows
@@ -16,96 +16,57 @@ EDCBをバッグエンドとして、KODI上でTV視聴、録画予約、そし�
 ### 基本
 | 項目 | 機能 |
 ----|----
-| NWサービスにTCPを使う | PIPEを使用する場合はOffにします。 |
-| NWサービスのTCPアドレス | EpgTimerのaddressとport。<br>例 192.168.1.101:4510 |
-| timeshiftを使う | TV視聴時にタイムシフト機能を有効にします。 |
+| コマンド制御用アドレス | EpgTimerSrvに接続するIPアドレスとポート。<br>例 192.168.1.101:4510 |
+| ストリーミング用アドレス | ストリーミングを受信するアダプタのIPアドレス。 |
 
-#### NWサービスの使用
-EpgTimer側で通信を許可する必要があります。
+#### コマンド制御するために
+EpgTimerSrv側で「ネットワーク接続を許可する」の設定が必要です。
 
-#### PIPEを用いたNWサービス
-Windows PC内でのプロセス間通信のみです。
+#### ストリーミング用のアドレスは
+UDP、又はTCPで共通です。
+
+### ライブ視聴
+| 項目 | 機能 |
+----|----
+| 使用プロトコル | EpgDataCap_Bonに接続するプロトコルを選択。 |
+| 使用ポート | ストリーミングを受信するポート。 |
+| 最大NetworkTVID数 | 使用可能なNetworkTVIDの最大数。 |
+| timeshiftの使用 | KODI側のタイムシフト機能を使用。 |
+
+#### ストリーミングを受信するため
+EpgDataCap_Bon側で「ネットワーク設定」の設定が必要です。
+
+#### TCP使用時のポートについて
+EDCBのReadme_Mod.txtより  
+「ポート番号が22000～22999の範囲では送信形式がplain(BonDriver_TCP.dllのための特別なヘッダをつけない)になります。」
+
+#### 最大NetworkTVID数は
+使用するチューナーのチャンネル数や接続するクライアント数によって決定します。
 
 #### タイムシフト機能を使用するには
 inputstream.ffmpegdirectアドオンが必要です。
 
-### 再生
+### 録画再生
 | 項目 | 機能 |
 ----|----
-| TV視聴の種類 | UDP、TCP又はHTTPを選択。 |
-| UDP アドレス | UDPを受信するアダプタのaddressとport。 |
-| TCP アドレス | TCPを受信するアダプタのaddressとport。 |
-| HTTP アドレス | HTTPを送信するサーバーのaddressとport。<br>例 http://server:5510/api/TVCast?onid=%d&tsid=%d&sid=%d |
+| 使用プロトコル | EpgDataCap_Bonに接続するプロトコルを選択。 |
+| 使用ポート | ストリーミングを受信するポート。 |
+| HTTP 公開ディレクトリ | HTTPサーバーで公開された録画ファイルのディレクトリを指定。 |
 
-#### UDP、TCPを使用するには
-EpgDataCap_Bon側で送信先の設定が必要です。  
+#### HTTPサーバーを使用する場合
+公開ディレクトリ内のサブディレクトリから録画ファイルにアクセス出来ません。  
+ファイル名に半角文字を含む場合は禁則文字に注意が必要です。
 
-#### UDP、TCPのアドレス
-受信アダプタを固定する場合に指定します。
-
-#### HTTPを使用するには
-TVキャスト用のREST APIが必要です。  
-以下はEDCB_Material_WebUIのTVCastを参考にしたサンプルです。  
-
-```lua
-function readts(pname)
-  f=edcb.io.open(pname, 'rb')
-
-  if not f then
-    mg.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n')
-  else
-    mg.write('HTTP/1.1 200 OK\r\nContent-Type: '..mg.get_mime_type('viewts')..'\r\nContent-Disposition: filename=viewts\r\nConnection: close\r\n\r\n')
-    while true do
-      buf=f:read(48128)
-      if buf and #buf ~= 0 then
-        if not mg.write(buf) then
-          -- キャンセルされた
-          mg.cry('canceled')
-          break
-        end
-      else
-        -- 終端に達した
-        mg.cry('end')
-        break
-      end
-    end
-    f:close()
-  end
-end
-
-ok,pid=edcb.IsOpenNetworkTV(n)
-if ok then
-  -- 開いているNetworkTVモードを使用
-  pname='\\\\.\\pipe\\SendTSTCP_'..n..'_'..pid, 'rb'
-  readtsa(pname)
-  edcb.CloseNetworkTV(n)
-else
-  -- 新しくNetworkTVモードを開く
-  if onid and tsid and sid then
-    ok,pid=edcb.OpenNetworkTV(mode, onid, tsid, sid, n)
-    retry=0
-    while true do
-      -- 最大5秒間パイプの準備待ち
-      retry=retry+1
-      ff=edcb.FindFile('\\\\.\\pipe\\SendTSTCP_'..n..'_'..pid, 1)
-      if ff or retry > 25 then break end
-      edcb.Sleep(200)
-    end
-  end
-  if ff and ok then
-    pname='\\\\.\\pipe\\'..ff[1].name, 'rb'
-    readts(pname)
-  end
-end
-```
+#### 録画再生のシークは
+HTTP使用時でのみ可能です。
 
 ### 番組表
 | 項目 | 機能 |
 ----|----
-| チャンネル指定 | 使用チャンネルを指定する。 |
-| チャンネルファイル | 使用チャンネルを定義したxml。 |
-| グループ指定 | 使用グループを指定する。 |
-| グループファイル | 使用グループを定義したxml。 |
+| チャンネル指定 | 使用するチャンネル定義を有効にする。 |
+| チャンネルファイル | 使用するチャンネルを定義したxml。 |
+| グループ指定 | 使用するチャンネルのグループ定義を有効にする。 |
+| グループファイル | 使用するチャンネルのグループを定義したxml。 |
 
 #### 例 channels.xml
 使用するチャンネルの選択、並び換えができます。  
@@ -119,7 +80,7 @@ end
 </channels>
 ```
 #### 例 groups.xml
-使用チャンネルグループの選択ができます。  
+使用するチャンネルをグループ化できます。
 
 ```xml
 <groups>
@@ -140,25 +101,21 @@ end
 </groups>
 ```
 
-### 録画
-| 項目 | 機能 |
-----|----
-| 録画先の種類 | ローカルフォルダ、又は共有フォルダを選択。 |
-| 共有フォルダのユーザー | ログインするユーザーとパスワード。 |
-
-#### 録画先の種類として
-ローカルネットワーク内で使用する場合は共有フォルダを選択します。
-
-#### 共有フォルダのパスを取得するために
-EpgTimerSrv.iniにCompatFlagsを設定します。  
-CompatFlags=16（4bit目をOn）
-
 ## コンテキストメニュー項目
 ### 録画
 | 項目 | 機能 |
 ----|----
 | ドロップログの表示 | 録画ステータスとドロップ数を表示。 |
 
-## ルールは
+## その他
+### 録画設定は
+デフォルトのプリセットを選択。  
+ワンセグ設定は無視します。  
+プリセット情報を読み込むためEpgTimerSrv.iniに下記設定が必要です。  
+CompatFlags=128（7bit目をOn）
+
+### ルールは
 自動予約の表示のみ対応。
 
+### 局ロゴは
+タイプ5のみサポート。
