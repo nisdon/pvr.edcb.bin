@@ -57,7 +57,7 @@ end
 -- 以下、配信処理を追加
 ```
 
-#### 録画視聴時におけるシーク等のファイル操作は
+#### 録画/追っかけ再生視聴におけるシーク等のファイル操作は
 公開フォルダ使用時のみ可能です。
 
 ### その他
@@ -75,7 +75,9 @@ end
 -- 録画ファイル取得
 dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
 query=mg.request_info.query_string
-recFile=GetFilePath(query)
+id=mg.get_var(query,'id')
+info=edcb.GetRecFileInfoBasic(id)
+recfile=info.recFilePath
 
 -- 以下、エンコード等の処理を追加
 ```
@@ -105,7 +107,6 @@ recFile=GetFilePath(query)
 
 ### 追っかけ再生
 録画中のTVチャンネルを視聴する際に選択できます。  
-又、視聴方法の選択に関係なくストリーミング再生します。
 
 ### 録画予約は
 ワンセグ設定を無視します。
