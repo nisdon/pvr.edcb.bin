@@ -15,14 +15,9 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 
 | プラットフォーム | モジュール |
 ----|----
-| Windows 64bit | pvr.edcb.dll（default） |
-| Raspberry Pi 64bit | pvr.edcb.so（default） |
-| Raspberry Pi 32bit | pvr.edcb.pi.v7a.so |
-| Android 64bit | pvr.edcb.android.so（default） |
-| Android 32bit | pvr.edcb.android.v7a.so |
-
-> [!TIP]
-> default以外の環境では、*addon.xml*に定義されたファイル名を変更するか、ファイル名をdefaultにリネームします。
+| Windows 64bit | pvr.edcb.dll |
+| Raspberry Pi 64bit | pvr.edcb.so |
+| Android 64bit | pvr.edcb.android.so |
 
 ### EDCB側の必須設定
  - EpgTimerSrvのネットワーク接続を許可.
@@ -50,32 +45,8 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 ### 基本/視聴方法
 | 項目 | 機能 |
 ----|----
-| TV視聴 | ストリーミング、又はWeb APIの使用を選択。 |
-| TV視聴用Web API | サーバー側に配置したWeb APIを指定。 |
 | 録画視聴 | KODIのビデオソース、又は公開フォルダ内の録画フォルダ参照を選択。 |
 | ビデオソース名 | KODIに追加したビデオソースの名前。 |
-
-> [!TIP]
-> TV視聴時にデュアルモノ音声変換やトランスコードを必要とする場合はWeb APIを使用します。
-> ```lua
-> -- 引数 pid:プロセスID
-> -- SrvPipe取得
-> dofile(mg.script_name:gsub('[^\\/]*$','')..'util.lua')
-> query=mg.request_info.query_string
-> pid=mg.get_var(query,'pid')
->
-> for i=1,50 do
->   ff=edcb.FindFile(SendTSTCPPipePath('*_'..pid,0),1)
->   if ff and ff[1].name:match('^[^_]+_%d+_%d+') then
->     pipeName='/var/local/edcb/'..ff[1].name
->     break
->   end
->   edcb.Sleep(200)
-> end
->
-> -- 以下、配信処理を追加
-> ```
-> [Web API視聴設定の補足](https://github.com/nisdon/pvr.edcb.bin/issues/4)
 
 > [!TIP]
 > KODIでは扱う動画の場所をビデオソースとして設定します。  
@@ -84,20 +55,19 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 > [!NOTE]
 > 公開フォルダはEDCBのHTTPサーバーで公開される場所（デフォルトではHttpPublic配下）です。
 
-> [!NOTE]
-> 録画のサムネイルとして表示される画像は録画視聴の方法により異なります。  
-> KODIのビデオソースから視聴する場合、KODIのビデオソースで表示されるサムネイルを使用。  
-> 公開フォルダから視聴する場合、EMWUIで表示されるサムネイルを使用。
-
 > [!WARNING]
 > 録画視聴にビデオソースを選択した場合、サブディレクトリは無視されます。
+
+> [!WARNING]
+> HTTPサーバー（公開フォルダ含む）で公開されたものは、KODIの動画サムネイル表示機能は使用できません。
+> [Thumbnails not generated for http as media](https://github.com/xbmc/xbmc/issues/25605)
 
 ### その他
 | 項目 | 機能 |
 ----|----
 | エンコード用Web API | サーバー側に配置したWeb APIを指定。 |
 | エンコード用引数リスト | 0から始まる引数の名前を定義。<br>例 360p_h264,720p_h264 |
-| 録画フォルダのサムネイル | ユーザーが用意したサムネイルを使用。 |
+| 録画サムネイル選択 | DEFAULT: KODIの動画サムネイル表示機能を使用。<br>REC FOLDER: 録画ファイルのフォルダにある *RECORD_FILE_NAME.ts.jpg* を表示。<br>NO THUMB: 非表示。 |
 | 録画のジャンル別表示 | ジャンル／タイトルとして階層表示。 |
 
 > [!TIP]
@@ -114,9 +84,10 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 > -- 以下、エンコード等の処理を追加
 > ```
 
-> [!TIP]
-> 録画フォルダのサムネイルを使用する場合、録画ファイルと同じ場所に *RECORD_FILE_NAME.ts.jpg* で保存します。  
-> 録画視聴の方法に関係無く当該サムネイルの表示が優先されます。
+### アクション（クライアント固有の設定）
+| 項目 | 機能 |
+----|----
+| プロセスの表示 | 稼動中のチューナー情報を表示します。 |
 
 ## コンテキストメニューの追加項目
 ### 録画
@@ -133,11 +104,6 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 > [!WARNING]
 > 扱えるプリセットの数は最大10個まで。
 
-### クライアント固有の設定
-| 項目 | 機能 |
-----|----
-| プロセスの表示 | 稼動中のチューナー情報を表示します。 |
-
 ### チャンネル（録画中）
 | 項目 | 機能 |
 ----|----
@@ -146,3 +112,6 @@ TV録画サーバーEDCBをバッグエンドとして、KODI上でTV視聴、�
 
 > [!NOTE]
 > 録画中のチャンネルを視聴する際、コンテキストメニューを表示。
+
+### inputstream.edcbアドオンの使用について
+インストールする事でKODIの代りにTVストリームを入力処理します。
